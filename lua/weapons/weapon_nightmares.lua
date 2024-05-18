@@ -35,8 +35,14 @@ SWEP.Damage = 0
 
 SWEP.NightmaresSound = Sound("voices/nightmares.wav")
 
+NightmareTexture = Material("rottweiler/nightmare")
+NightmareScream = Sound("voices/scream.wav")
+NightmareToggle = false
+ProcessingNightmare = false
+
 if SERVER then
   util.AddNetworkString( "grap" )
+  util.AddNetworkString( "horror" )
 end
 
 function SWEP:Think()
@@ -86,17 +92,24 @@ function SWEP:PrimaryAttack()
 	local tr = util.TraceLine( {
 		start = eyePos,
 		endpos = eyePos + eyeDir * 10000,
-		filter = function(e) return (e ~= owner) end
+		--filter= function(e) return true end
+		filter = owner
 	} )
 	
 	if(IsValid(tr.Entity))then
-		print(tr.Entity)
 		if(tr.Entity:IsNPC())then
 			tr.Entity:SetSaveValue("m_vecLastPosition", tr.Entity:GetPos())
 			tr.Entity:SetSchedule(SCHED_COWER)
 			tr.Entity:FearSound()
 			tr.Entity:AddEntityRelationship(owner, D_FR, 13 )
 			EmitSound(self.NightmaresSound, tr.Entity:GetPos())
+			
+		elseif (tr.Entity:IsPlayer())then
+			if(SERVER)then
+				net.Start("horror")
+				net.Send(tr.Entity)
+			end
+
 		end
 		-- local phys = tr.Entity:GetPhysicsObject()
 		-- if(IsValid(phys)) then
@@ -138,3 +151,42 @@ end
 function SWEP:OnDrop()
   self:Remove()
 end
+
+--[[
+	Network message works
+--]]
+if(CLIENT)then
+	net.Receive("horror", function(len, ply)
+		if(NightmareToggle) then return end
+		timer.Simple(3, function()
+			if(NightmareToggle) then return end
+			NightmareToggle = !NightmareToggle
+		end)
+	end)
+end
+
+--[[ 
+	Spooky stuff
+--]]
+hook.Add("RenderScreenspaceEffects", "LoveYou:RenderScreenspaceEffects", function()
+	if (NightmareToggle) then
+		
+		surface.SetDrawColor(255, 255, 255, 255)
+		surface.SetMaterial(NightmareTexture)
+		surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
+		
+		if(not ProcessingNightmare) then
+			ProcessingNightmare = true
+			surface.PlaySound("voices/scream.wav")
+
+			timer.Simple(SoundDuration("voices/scream.wav"), function()
+				NightmareToggle = false
+				ProcessingNightmare = false
+				
+			end)
+		end
+		
+
+		
+	end
+end )
