@@ -28,7 +28,7 @@ SWEP.DrawCrosshair = true
 SWEP.ViewModelFOV = 54
 SWEP.ViewModel = "models/weapons/rottweiler/nightmares.mdl"
 SWEP.WorldModel = ""
-SWEP.UseHands = false
+SWEP.UseHands = true
 
 SWEP.HitDistance = 40
 SWEP.Damage = 0
